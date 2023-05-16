@@ -4,3 +4,5 @@
 *.npy
 .ipynb_checkpoints/
 *.pt
+models/*
+descriptions/
