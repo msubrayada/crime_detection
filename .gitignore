@@ -5,5 +5,5 @@
 .ipynb_checkpoints/
 *.pt
 models/*
-descriptions/
+descriptions/*.txt
 __pycache__/
