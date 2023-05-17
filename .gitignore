@@ -6,3 +6,4 @@
 *.pt
 models/*
 descriptions/
+__pycache__/

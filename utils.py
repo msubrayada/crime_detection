@@ -1,9 +1,9 @@
-#import pandas as pd
 import torch
-#import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import imread
+from sklearn.metrics import roc_curve, auc, roc_auc_score
+from torch.nn.functional import one_hot
 
 
 labels = {"Normal": 0,
@@ -17,6 +17,18 @@ labels = {"Normal": 0,
           "Shooting": 8,
           "Vandalism": 9
          }
+
+
+CLASS_LABELS = ["normal", 
+                "Abuse",
+                "Arrest",
+                "Arson",
+                "Burglary",
+                "Explosion",
+                "Fighting",
+                "RoadAccidents",
+                "Shooting",
+                "Vandalism"]
 
 def evaluate(data, model, device, batch_size):
     with torch.no_grad():
@@ -34,8 +46,8 @@ def get_acc(pred, target, return_sum=False):
         return s
     return s/len(pred)
 
-def get_data(df, path="d:/data/UCF-crime/Anomaly-Videos-qformer-features"):    
-    X = np.zeros((len(df), 768))
+def get_data(df, path="d:/data/UCF-crime/Anomaly-Videos-qformer-features", n=768):    
+    X = np.zeros((len(df), n))
     c = 0
     for _, f in df.iterrows():
         directory = f["directory"][:-7] 
@@ -47,17 +59,7 @@ def get_data(df, path="d:/data/UCF-crime/Anomaly-Videos-qformer-features"):
     y = torch.tensor(y, dtype=torch.float32)
     return X, y
 
-def plot_results(y, pred):
-    CLASS_LABELS = ["normal", 
-                    "Abuse",
-                    "Arrest",
-                    "Arson",
-                    "Burglary",
-                    "Explosion",
-                    "Fighting",
-                    "RoadAccidents",
-                    "Shooting",
-                    "Vandalism"]
+def plot_results(y, pred):   
     plt.figure(figsize = (12,3))
     plt.plot(y)
     for i in range(10):
@@ -76,3 +78,29 @@ def show_frames(video, n=10):
         axarr[i].title.set_text(f"Frame {i*sk}")
         axarr[i].axis('off')
     plt.show()
+    
+def get_acc_per_lbl(pred, target, return_sum=False):
+    for i in range(len(labels)):
+        p = (target == i).sum()
+        t = (torch.argmax(pred, dim=1) == i).sum()
+        s = ((torch.argmax(pred, dim=1) == i) & (target == i)).sum()
+        presc = s/t
+        recall = s/p
+        print(f"{i}, presc {s/t:.2f}, recall {s/p:.2f}, f1 {2*presc*recall/(presc+recall):.2f}\t total {p} {list(labels.keys())[i]}")
+    
+    return 
+
+
+
+def multiclass_roc_auc_score(y_true, y_pred, average="macro"):    
+    fig, c_ax = plt.subplots(1,1, figsize = (8,5))
+    for (idx, c_label) in enumerate(CLASS_LABELS):
+        fpr, tpr, thresholds = roc_curve((y_true == idx).type(torch.int32), y_pred[:,idx])
+        c_ax.plot(fpr, tpr,lw=2, label = '%s (AUC:%0.2f)'  % (c_label, auc(fpr, tpr)))
+    c_ax.plot(fpr, fpr, 'black',linestyle='dashed', lw=4, label = 'Random Guessing')
+    y_true = one_hot(y_true.type(torch.LongTensor))
+    plt.xlabel('FALSE POSITIVE RATE', fontsize=18)
+    plt.ylabel('TRUE POSITIVE RATE', fontsize=16)
+    plt.legend(fontsize = 11.5)
+    plt.show()
+    return roc_auc_score(y_true, y_pred, average=average)
