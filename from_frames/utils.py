@@ -104,3 +104,31 @@ def multiclass_roc_auc_score(y_true, y_pred, average="macro"):
     plt.legend(fontsize = 11.5)
     plt.show()
     return roc_auc_score(y_true, y_pred, average=average)
+
+def put_momentum(pred, rho=0.9):
+    v = torch.tensor([0]*10,  dtype=torch.float32)
+    pred_momentum = []
+    for p in pred:
+        p_m = p + v * rho
+        v = p_m
+        p_m = p_m / (torch.sum(p_m))
+        pred_momentum.append(torch.unsqueeze(p_m, 0))    
+    pred_momentum = torch.cat(pred_momentum, dim=0)
+    return pred_momentum
+
+def put_momentum_per_video(pred, videos, rho=0.9):
+    v = torch.tensor([0]*10,  dtype=torch.float32)
+    pred_momentum = []
+    count = 0
+    video = videos[0]
+    for p in pred:
+        if (videos[count] != video):
+            video = videos[count]
+            v = torch.tensor([0]*10,  dtype=torch.float32)
+        p_m = p + v * rho
+        v = p_m
+        p_m = p_m / (torch.sum(p_m))
+        pred_momentum.append(torch.unsqueeze(p_m, 0))    
+        count += 1
+    pred_momentum = torch.cat(pred_momentum, dim=0)
+    return pred_momentum
