@@ -46,7 +46,7 @@ def get_acc(pred, target, return_sum=False):
         return s
     return s/len(pred)
 
-def get_data(df, path="d:/data/UCF-crime/Anomaly-Videos-qformer-features", n=768):    
+def get_data(df, path, n):    
     X = np.zeros((len(df), n))
     c = 0
     for _, f in df.iterrows():
